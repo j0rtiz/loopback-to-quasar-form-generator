@@ -3,7 +3,14 @@
   "version": "1.0.0",
   "author": "j0rtiz <j0rtiz@protonmail.ch>",
   "license": "MIT",
-  "main": "main.js",
+  "main": "./bin/main",
+  "preferGlobal": true,
+  "bin": {
+    "lb2quasar": "./bin/main"
+  },
+  "files": [
+    "./bin"
+  ],
   "scripts": {
     "generate": "node ."
   },
