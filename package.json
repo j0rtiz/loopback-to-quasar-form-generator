@@ -1,0 +1,17 @@
+{
+  "name": "loopback-to-quasar-form-generator",
+  "version": "1.0.0",
+  "author": "j0rtiz <j0rtiz@protonmail.ch>",
+  "license": "MIT",
+  "main": "main.js",
+  "scripts": {
+    "generate": "node ."
+  },
+  "dependencies": {
+    "mkdirp": "^0.5.1",
+    "node-find-folder": "^0.1.32",
+    "npm": "^6.13.6",
+    "prompts": "^2.3.0",
+    "to-case": "^2.0.0"
+  }
+}

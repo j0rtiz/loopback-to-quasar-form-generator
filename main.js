@@ -1,0 +1,190 @@
+'use strict';
+
+const { readFileSync, writeFileSync } = require('fs');
+const findFolder = require('node-find-folder');
+const prompts = require('prompts');
+const toCase = require('to-case');
+const mkdirp = require('mkdirp');
+const npm = require('npm');
+
+async function formGenerate() {
+  const MODEL_NAME = process.argv[2];
+  const FOLDER_NAME = process.argv[3];
+  const FILE_NAME = process.argv[4];
+
+  const MODELS = new findFolder('models');
+  const COMPONENTS = new findFolder('components');
+
+  const FROM_MODEL = `${MODELS}/${MODEL_NAME}.json`;
+  const TO_PATH = `${COMPONENTS}/${FOLDER_NAME}`;
+  const TO_FILE = `${TO_PATH}/${FILE_NAME}.vue`;
+
+  const properties = JSON.parse(readFileSync(FROM_MODEL, 'utf-8')).properties;
+  const keys = Object.keys(properties);
+
+  const questions = ['title', ...keys].map((name) => {
+    const isTitle = name === 'title';
+
+    return {
+      validate: (value) => (!value ? `Informe um ${isTitle ? 'título' : 'label'}` : true),
+      message: `Informe um ${isTitle ? 'título' : 'label'} para ${isTitle ? 'o formulário' : name}:`,
+      type: 'text',
+      name,
+    };
+  });
+  const labels = await prompts(questions);
+
+  let form = `
+    <template>
+      <q-dialog
+        ref="dialog"
+        @hide="$emit('hide')"
+      >
+        <q-card class="q-dialog-plugin">
+          <q-card-section>
+            <div class="text-h6">
+              ${labels.title}
+            </div>
+          </q-card-section>
+
+          <q-card-section>`;
+
+  keys.forEach((key) => {
+    const isUsername = key === 'username';
+    const isLast = key === keys.slice(-1)[0];
+
+    form += `
+      <q-input
+        v-model="Form.${key}"
+        label="${labels[key]}"
+        :error="$v.Form.${key}.$error"`;
+
+    if (isUsername) form += '\n\tmask="###.###.###-##"\n\tunmasked-value';
+
+    form += '\n/>';
+
+    if (!isLast) form += '\n';
+  });
+
+  form += `
+          </q-card-section>
+
+          <q-card-actions align="between">
+            <q-btn
+              label="Cancelar"
+              color="primary"
+              flat
+              @click="hide"
+            />
+            <q-btn
+              label="Salvar"
+              color="primary"
+              flat
+              @click="save"
+            />
+          </q-card-actions>
+        </q-card>
+      </q-dialog>
+    </template>
+
+    <script>
+    import {
+      required,
+      minLength,
+      maxLength`;
+
+  if (keys.includes('email')) form += ',\nemail';
+
+  form += "\n} from 'vuelidate/lib/validators'";
+
+  if (keys.includes('username')) form += "\nimport { isCPF } from 'brazilian-values'";
+
+  form += '\n\nconst factoryForm = JSON.stringify({';
+
+  keys.forEach((key) => (form += `\n${key}: '',`));
+
+  form += `
+      id: 0
+    })
+
+    export default {
+      name: '${toCase.pascal('Component.' + FILE_NAME)}',
+      props: {
+        id: {
+          type: Number,
+          default: 0
+        }
+      },
+      validations: {
+        Form: {`;
+
+  keys.forEach((key) => {
+    const isRequired = properties[key].required;
+    const isString = properties[key].type === 'string';
+    const isUsername = key === 'username';
+    const isEmail = key === 'email';
+
+    form += `\n${key}: {`;
+
+    if (isRequired) form += '\nrequired,';
+    if (isString && !isUsername && !isEmail) form += '\nminLength: minLength(5),\nmaxLength: maxLength(30),';
+    if (isUsername) form += '\nisCPF,';
+    if (isEmail) form += '\nemail,';
+
+    form += `\n},`;
+  });
+
+  form += `
+        }
+      },
+      asyncData: {
+        FormDefault: JSON.parse(factoryForm),
+        async Form () {
+          if (!this.id) {
+            return JSON.parse(factoryForm)
+          }
+
+          const axiosConfig = {
+            method: 'get',
+            url: \`/${toCase.pascal(FILE_NAME)}/\${this.id}\`
+          }
+
+          const Response = await this.$axios(axiosConfig.url, axiosConfig)
+            .then(R => R.data)
+            .catch(this.AxiosCatch)
+
+          return Response
+        }
+      },
+      methods: {
+        show () {
+          this.$refs.dialog.show()
+        },
+        hide () {
+          this.$refs.dialog.hide()
+        },
+        save () {
+          this.$v.Form.$touch()
+
+          if (this.$v.Form.$error) {
+            return undefined
+          }
+
+          this.$emit('ok')
+          this.hide()
+        }
+      }
+    }
+    </script>\n`;
+
+  await mkdirp(TO_PATH);
+  writeFileSync(TO_FILE, form);
+}
+
+formGenerate()
+  .then(() => {
+    npm.load(() => npm.run('lint'));
+  })
+  .catch((err) => {
+    console.error(err);
+  });
