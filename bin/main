@@ -13,8 +13,8 @@ async function formGenerate() {
   const FOLDER_NAME = process.argv[3];
   const FILE_NAME = process.argv[4];
 
-  const MODELS = new findFolder('models').find((model) => model.split('/').includes('common'));
-  const COMPONENTS = new findFolder('components').find((component) => component.split('/').includes('src'));
+  const MODELS = new findFolder('models').find((model) => model.split('/').includes('common') && !model.split('/').includes('node_modules'));
+  const COMPONENTS = new findFolder('components').find((component) => component.split('/').includes('src') && !component.split('/').includes('node_modules'));
 
   const FROM_MODEL = `${MODELS}/${MODEL_NAME}.json`;
   const TO_PATH = `${COMPONENTS}/${FOLDER_NAME}`;
