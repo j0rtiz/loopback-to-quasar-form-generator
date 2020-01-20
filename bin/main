@@ -43,7 +43,7 @@ async function formGenerate () {
   const labels = await prompts(questions, { onCancel });
 
   if (isCanceled) {
-    throw 'Cancelado!';
+    throw '\nCancelado!\n';
   };
 
   console.log("\nCriando formulário...");
