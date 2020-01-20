@@ -8,7 +8,9 @@ const toCase = require('to-case');
 const mkdirp = require('mkdirp');
 const npm = require('npm');
 
-async function formGenerate() {
+async function formGenerate () {
+  let isCanceled = false;
+
   const MODEL_NAME = process.argv[2];
   const FOLDER_NAME = process.argv[3];
   const FILE_NAME = process.argv[4];
@@ -33,7 +35,18 @@ async function formGenerate() {
       name,
     };
   });
-  const labels = await prompts(questions);
+  const onCancel = () => {
+    isCanceled = true;
+
+    return false;
+  };
+  const labels = await prompts(questions, { onCancel });
+
+  if (isCanceled) {
+    throw 'Cancelado!';
+  };
+
+  console.log("\nCriando formulário...");
 
   let form = `
     <template>
@@ -180,11 +193,19 @@ async function formGenerate() {
 
   await mkdirp(TO_PATH);
   writeFileSync(TO_FILE, form);
+
+  return "Formulário criado com sucesso!";
 }
 
 formGenerate()
-  .then(() => {
-    npm.load(() => npm.run('lint'));
+  .then((success) => {
+    console.log(success);
+    console.log("\nFormatando formulário...");
+
+    npm.load(() => {
+      npm.run('lint');
+      console.log("Formulário formatado com sucesso!");
+    });
   })
   .catch((err) => {
     console.error(err);

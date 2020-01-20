@@ -1,8 +1,12 @@
 {
   "name": "loopback-to-quasar-form-generator",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "author": "j0rtiz <j0rtiz@protonmail.ch>",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git@github.com:j0rtiz/loopback-to-quasar-form-generator.git"
+  },
   "main": "./bin/main",
   "preferGlobal": true,
   "bin": {
